@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>숫자블록 연산</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -12,6 +17,7 @@
     --blue-ink:#FFFFFF;
     --green:#2E9E5B;
     --amber:#E0972E;
+    --purple:#7C5CFC;
     --bad:#D6483C;
     --focus:#2F6FED;
     --shadow: 0 1px 2px rgba(30,43,34,.06), 0 8px 24px -12px rgba(30,43,34,.18);
@@ -28,6 +34,7 @@
       --blue-ink:#0E1512;
       --green:#4CBE85;
       --amber:#F0A94E;
+      --purple:#9C87FF;
       --bad:#F0685C;
       --focus:#5B8CFF;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
@@ -44,12 +51,14 @@
     --blue-ink:#0E1512;
     --green:#4CBE85;
     --amber:#F0A94E;
+    --purple:#9C87FF;
     --bad:#F0685C;
     --focus:#5B8CFF;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
   }
 
-  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body{
     margin:0;
     min-height:100vh;
@@ -61,10 +70,19 @@
     font-family:"Gowun Dodum","Malgun Gothic",sans-serif;
     display:flex;
     justify-content:center;
-    padding:40px 16px 64px;
+    padding:max(32px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right) + 16px) max(48px, env(safe-area-inset-bottom) + 16px) max(16px, env(safe-area-inset-left) + 16px);
   }
 
   .page{ width:100%; max-width:520px; }
+
+  button{ touch-action:manipulation; }
+
+  @media (max-width:380px){
+    body{ padding-top:24px; }
+    .card{ padding:18px; gap:16px; }
+    .count-toggle button{ font-size:13px; padding:8px 0; }
+    .level-btn{ height:96px; }
+  }
 
   header{ text-align:center; margin-bottom:22px; }
   h1{
@@ -163,7 +181,7 @@
   }
   .level-row{
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(2,1fr);
     gap:10px;
   }
   .level-btn{
@@ -226,12 +244,15 @@
   .level-btn[data-level="1"]{ --accent-c:var(--blue); }
   .level-btn[data-level="2"]{ --accent-c:var(--green); }
   .level-btn[data-level="3"]{ --accent-c:var(--amber); }
+  .level-btn[data-level="4"]{ --accent-c:var(--purple); }
 
   .block-unit{ width:16px; height:16px; border-radius:3px; background:var(--blue); }
   .block-ten{ display:flex; gap:1px; height:16px; }
   .block-ten span{ width:4px; height:16px; border-radius:1px; background:var(--green); }
   .block-hundred{ display:grid; grid-template-columns:repeat(10,4px); grid-auto-rows:4px; gap:1px; }
   .block-hundred span{ background:var(--amber); border-radius:1px; }
+  .block-thousand{ display:grid; grid-template-columns:repeat(5,7px); grid-auto-rows:7px; gap:2px; }
+  .block-thousand span{ background:var(--purple); border-radius:1.5px; }
 
   /* problem panel */
   .problem-panel{
@@ -358,9 +379,47 @@
     40%,60%{ transform:translateX(5px); }
   }
   .problem-panel.shake{ animation:shake .4s ease; }
+
+  /* confetti */
+  .confetti-layer{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:9999;
+  }
+  .confetti-piece{
+    position:absolute;
+    top:-12px;
+    width:8px;
+    height:14px;
+    opacity:.9;
+    animation-name:confetti-fall;
+    animation-timing-function:ease-in;
+    animation-fill-mode:forwards;
+  }
+  @keyframes confetti-fall{
+    to{ transform:translateY(115vh) rotate(360deg); opacity:.15; }
+  }
+
+  .result-emojis{
+    font-size:clamp(22px,7vw,30px);
+    line-height:1.2;
+    letter-spacing:4px;
+  }
+  .result-emojis.hidden{ display:none; }
+  .result-panel.perfect .result-score{ animation:pop-bounce .6s ease; }
+  @keyframes pop-bounce{
+    0%{ transform:scale(.6); }
+    50%{ transform:scale(1.15); }
+    100%{ transform:scale(1); }
+  }
+
   @media (prefers-reduced-motion: reduce){
     .problem-panel.shake{ animation:none; }
     .level-btn, .primary-btn{ transition:none; }
+    .result-panel.perfect .result-score{ animation:none; }
+    .confetti-piece{ display:none; }
   }
 
   /* result panel */
@@ -417,6 +476,8 @@
     margin-top:2px;
   }
 </style>
+</head>
+<body>
 
 <div class="page">
   <header>
@@ -430,7 +491,7 @@
       <button type="button" data-op="sub" role="tab" aria-selected="false">뺄셈 −</button>
     </div>
 
-    <p class="level-hint">자릿수는 여러 개 함께 고를 수 있어요</p>
+    <p class="level-hint">자릿수는 여러 개 함께 고를 수 있어요 · 여러 개를 고르면 서로 다른 자릿수가 섞여서 나와요</p>
     <div class="level-row" role="group" aria-label="자릿수 선택 (중복 선택 가능)">
       <button type="button" class="level-btn active" data-level="1" aria-pressed="true">
         <span class="check">✓</span>
@@ -446,6 +507,11 @@
         <span class="check">✓</span>
         <span class="icon-slot"><span class="block-hundred" id="hundredIcon"></span></span>
         <span class="label">세자리<small>100~999</small></span>
+      </button>
+      <button type="button" class="level-btn" data-level="4" aria-pressed="false">
+        <span class="check">✓</span>
+        <span class="icon-slot"><span class="block-thousand" id="thousandIcon"></span></span>
+        <span class="label">네자리<small>1000~9999</small></span>
       </button>
     </div>
 
@@ -471,6 +537,7 @@
     </div>
 
     <div class="result-panel hidden" id="resultPanel">
+      <div class="result-emojis hidden" id="resultEmojis" aria-hidden="true"></div>
       <div class="result-score" id="resultScore">0 / 0</div>
       <div class="result-label" id="resultLabel">정답률 0%</div>
       <div class="result-detail" id="resultDetail">최고 기록(연속 정답) 0개</div>
@@ -485,12 +552,18 @@
   </div>
 </div>
 
+<div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+
 <script>
 (function(){
   var tenIcon = document.getElementById('tenIcon');
   for (var i=0;i<10;i++){ tenIcon.appendChild(document.createElement('span')); }
   var hundredIcon = document.getElementById('hundredIcon');
   for (var j=0;j<100;j++){ hundredIcon.appendChild(document.createElement('span')); }
+  var thousandIcon = document.getElementById('thousandIcon');
+  for (var q=0;q<10;q++){ thousandIcon.appendChild(document.createElement('span')); }
+
+  var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   var state = { op:'add', levels:[1], total:10, current:null, answered:false, correct:0, attempted:0, streak:0, startTime:null, timerHandle:null };
 
@@ -503,10 +576,12 @@
   var progressFill = document.getElementById('progressFill');
   var timerText = document.getElementById('timerText');
   var resultPanel = document.getElementById('resultPanel');
+  var resultEmojisEl = document.getElementById('resultEmojis');
   var resultScoreEl = document.getElementById('resultScore');
   var resultLabelEl = document.getElementById('resultLabel');
   var resultDetailEl = document.getElementById('resultDetail');
   var restartBtn = document.getElementById('restartBtn');
+  var confettiLayer = document.getElementById('confettiLayer');
   var statScore = document.getElementById('statScore');
   var statStreak = document.getElementById('statStreak');
   var statBest = document.getElementById('statBest');
@@ -545,8 +620,10 @@
     if (state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; }
   }
 
+  var SPREADS = {1:9, 2:20, 3:60, 4:150};
+
   function buildChoices(answer, level){
-    var spread = level === 1 ? 9 : (level === 2 ? 20 : 60);
+    var spread = SPREADS[level] || 60;
     var values = [answer];
     var guard = 0;
     while (values.length < 4 && guard < 100){
@@ -568,19 +645,24 @@
     return values;
   }
 
+  var RANGES = {1:[1,9], 2:[10,99], 3:[100,999], 4:[1000,9999]};
+
   function newProblem(){
-    var ranges = {1:[1,9], 2:[10,99], 3:[100,999]};
-    var level = state.levels[rand(0, state.levels.length - 1)];
-    var r = ranges[level];
-    var a = rand(r[0], r[1]);
-    var b = rand(r[0], r[1]);
+    var levelA = state.levels[rand(0, state.levels.length - 1)];
+    var levelB = state.levels[rand(0, state.levels.length - 1)];
+    var a = rand(RANGES[levelA][0], RANGES[levelA][1]);
+    var b = rand(RANGES[levelB][0], RANGES[levelB][1]);
+    if (levelA < levelB){
+      var tmpV = a; a = b; b = tmpV;
+      var tmpL = levelA; levelA = levelB; levelB = tmpL;
+    }
     if (state.op === 'sub' && a < b){ var t=a; a=b; b=t; }
     var answer = state.op === 'add' ? a+b : a-b;
-    state.current = { a:a, b:b, answer:answer, level:level };
+    state.current = { a:a, b:b, answer:answer, level:levelA };
     state.answered = false;
     equationEl.textContent = a + ' ' + (state.op==='add' ? '+' : '−') + ' ' + b + ' =';
 
-    var options = buildChoices(answer, level);
+    var options = buildChoices(answer, levelA);
     choicesEl.innerHTML = '';
     options.forEach(function(val){
       var btn = document.createElement('button');
@@ -601,6 +683,28 @@
     progressFill.style.width = ((state.attempted / state.total) * 100) + '%';
   }
 
+  function cssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function launchConfetti(){
+    if (reduceMotion || !confettiLayer) return;
+    confettiLayer.innerHTML = '';
+    var colors = [cssVar('--blue'), cssVar('--green'), cssVar('--amber'), cssVar('--purple'), cssVar('--bad')];
+    var count = 70;
+    for (var i=0;i<count;i++){
+      var piece = document.createElement('span');
+      piece.className = 'confetti-piece';
+      piece.style.left = (Math.random()*100) + 'vw';
+      piece.style.background = colors[Math.floor(Math.random()*colors.length)] || '#2F6FED';
+      piece.style.animationDuration = (2 + Math.random()*1.8) + 's';
+      piece.style.animationDelay = (Math.random()*0.4) + 's';
+      if (Math.random() < 0.5){ piece.style.borderRadius = '50%'; }
+      confettiLayer.appendChild(piece);
+    }
+    setTimeout(function(){ confettiLayer.innerHTML = ''; }, 4200);
+  }
+
   function finishSession(){
     stopTimer();
     var elapsed = state.startTime ? Date.now() - state.startTime : 0;
@@ -608,14 +712,30 @@
     resultPanel.classList.remove('hidden');
     var pct = state.total ? Math.round((state.correct / state.total) * 100) : 0;
     resultScoreEl.textContent = state.correct + ' / ' + state.total;
-    resultLabelEl.textContent = '정답률 ' + pct + '%';
+    var isPerfect = state.total > 0 && state.correct === state.total;
     resultDetailEl.textContent = '소요 시간 ' + formatElapsed(elapsed) + ' · 최고 기록(연속 정답) ' + loadBest() + '개';
+    if (isPerfect){
+      resultPanel.classList.add('perfect');
+      resultEmojisEl.textContent = '🎉🥳🎊✨';
+      resultEmojisEl.classList.remove('hidden');
+      resultLabelEl.textContent = '🏆 완벽해요! 100점 만점이에요!';
+      launchConfetti();
+    } else {
+      resultPanel.classList.remove('perfect');
+      resultEmojisEl.textContent = '';
+      resultEmojisEl.classList.add('hidden');
+      resultLabelEl.textContent = '정답률 ' + pct + '%';
+    }
     restartBtn.focus();
   }
 
   function startSession(){
     state.correct = 0; state.attempted = 0; state.streak = 0;
     resultPanel.classList.add('hidden');
+    resultPanel.classList.remove('perfect');
+    resultEmojisEl.textContent = '';
+    resultEmojisEl.classList.add('hidden');
+    if (confettiLayer){ confettiLayer.innerHTML = ''; }
     panelEl.classList.remove('hidden');
     renderStats();
     startTimer();
@@ -723,3 +843,6 @@
   startSession();
 })();
 </script>
+
+</body>
+</html>
