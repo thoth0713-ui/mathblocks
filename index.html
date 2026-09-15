@@ -1,0 +1,725 @@
+<title>숫자블록 연산</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  :root{
+    --bg:#EEF3F0;
+    --surface:#FFFFFF;
+    --surface-soft:#F5F8F6;
+    --ink:#1E2B22;
+    --ink-soft:#5E6E64;
+    --line:#D9E4DD;
+    --blue:#2F6FED;
+    --blue-ink:#FFFFFF;
+    --green:#2E9E5B;
+    --amber:#E0972E;
+    --bad:#D6483C;
+    --focus:#2F6FED;
+    --shadow: 0 1px 2px rgba(30,43,34,.06), 0 8px 24px -12px rgba(30,43,34,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121A16;
+      --surface:#1B2620;
+      --surface-soft:#20302A;
+      --ink:#EAF2EC;
+      --ink-soft:#9FB3A8;
+      --line:#2A3830;
+      --blue:#5B8CFF;
+      --blue-ink:#0E1512;
+      --green:#4CBE85;
+      --amber:#F0A94E;
+      --bad:#F0685C;
+      --focus:#5B8CFF;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121A16;
+    --surface:#1B2620;
+    --surface-soft:#20302A;
+    --ink:#EAF2EC;
+    --ink-soft:#9FB3A8;
+    --line:#2A3830;
+    --blue:#5B8CFF;
+    --blue-ink:#0E1512;
+    --green:#4CBE85;
+    --amber:#F0A94E;
+    --bad:#F0685C;
+    --focus:#5B8CFF;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background-color:var(--bg);
+    background-image:
+      repeating-linear-gradient(0deg, var(--line) 0 1px, transparent 1px 32px),
+      repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 32px);
+    color:var(--ink);
+    font-family:"Gowun Dodum","Malgun Gothic",sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:40px 16px 64px;
+  }
+
+  .page{ width:100%; max-width:520px; }
+
+  header{ text-align:center; margin-bottom:22px; }
+  h1{
+    font-family:"Do Hyeon","Malgun Gothic",sans-serif;
+    font-weight:400;
+    font-size:clamp(28px,6vw,36px);
+    letter-spacing:.5px;
+    margin:0 0 6px;
+    text-wrap:balance;
+  }
+  header p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+
+  .card{
+    background:var(--surface);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  /* operation toggle */
+  .op-toggle{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    background:var(--surface-soft);
+    border-radius:14px;
+    padding:4px;
+    gap:4px;
+  }
+  .op-toggle button{
+    appearance:none;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:"Do Hyeon","Malgun Gothic",sans-serif;
+    font-size:19px;
+    padding:10px 0;
+    border-radius:10px;
+    cursor:pointer;
+    transition:background-color .15s ease, color .15s ease;
+  }
+  .op-toggle button.active{
+    background:var(--blue);
+    color:var(--blue-ink);
+  }
+  .op-toggle button:focus-visible,
+  .level-btn:focus-visible,
+  .choice-btn:focus-visible,
+  .primary-btn:focus-visible{
+    outline:3px solid var(--focus);
+    outline-offset:2px;
+  }
+
+  /* question-count toggle */
+  .count-toggle{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    background:var(--surface-soft);
+    border-radius:14px;
+    padding:4px;
+    gap:4px;
+  }
+  .count-toggle button{
+    appearance:none;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:"Do Hyeon","Malgun Gothic",sans-serif;
+    font-size:15px;
+    padding:9px 0;
+    border-radius:10px;
+    cursor:pointer;
+    transition:background-color .15s ease, color .15s ease;
+  }
+  .count-toggle button.active{
+    background:var(--blue);
+    color:var(--blue-ink);
+  }
+  .count-toggle button:focus-visible{
+    outline:3px solid var(--focus);
+    outline-offset:2px;
+  }
+
+  /* level selector */
+  .level-hint{
+    margin:-10px 0 0;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+  .level-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+  }
+  .level-btn{
+    appearance:none;
+    cursor:pointer;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    height:104px;
+    padding:12px 6px 10px;
+    border-radius:14px;
+    border:1.5px solid var(--line);
+    background:var(--surface-soft);
+    color:var(--ink);
+    transition:border-color .15s ease, transform .1s ease, background-color .15s ease;
+  }
+  .level-btn .check{
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:17px;
+    height:17px;
+    border-radius:50%;
+    background:var(--accent-c,var(--blue));
+    color:var(--blue-ink);
+    font-size:11px;
+    line-height:17px;
+    text-align:center;
+    opacity:0;
+    transform:scale(.5);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .level-btn.active .check{ opacity:1; transform:scale(1); }
+  .level-btn .icon-slot{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .level-btn .label{
+    font-size:13.5px;
+    line-height:1.35;
+    text-align:center;
+  }
+  .level-btn .label small{
+    display:block;
+    color:var(--ink-soft);
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    letter-spacing:.2px;
+  }
+  .level-btn.active{
+    border-color:var(--accent-c,var(--blue));
+    background:color-mix(in srgb, var(--accent-c,var(--blue)) 12%, var(--surface));
+  }
+  .level-btn:active{ transform:scale(.97); }
+  .level-btn[data-level="1"]{ --accent-c:var(--blue); }
+  .level-btn[data-level="2"]{ --accent-c:var(--green); }
+  .level-btn[data-level="3"]{ --accent-c:var(--amber); }
+
+  .block-unit{ width:16px; height:16px; border-radius:3px; background:var(--blue); }
+  .block-ten{ display:flex; gap:1px; height:16px; }
+  .block-ten span{ width:4px; height:16px; border-radius:1px; background:var(--green); }
+  .block-hundred{ display:grid; grid-template-columns:repeat(10,4px); grid-auto-rows:4px; gap:1px; }
+  .block-hundred span{ background:var(--amber); border-radius:1px; }
+
+  /* problem panel */
+  .problem-panel{
+    border:1.5px solid var(--line);
+    border-radius:16px;
+    padding:26px 20px 22px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    transition:border-color .15s ease;
+  }
+  .problem-panel.state-correct{ border-color:var(--green); }
+  .problem-panel.state-wrong{ border-color:var(--bad); }
+  .problem-panel.hidden{ display:none; }
+
+  .progress-wrap{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .progress-meta{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .progress-text,
+  .timer-text{
+    font-family:"JetBrains Mono",monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    letter-spacing:.3px;
+    font-variant-numeric:tabular-nums;
+  }
+  .timer-text::before{
+    content:"⏱ ";
+  }
+  .progress-bar{
+    width:100%;
+    height:6px;
+    background:var(--line);
+    border-radius:999px;
+    overflow:hidden;
+  }
+  .progress-bar-fill{
+    height:100%;
+    background:var(--blue);
+    border-radius:999px;
+    transition:width .25s ease;
+  }
+
+  .equation{
+    font-family:"Do Hyeon","Malgun Gothic",sans-serif;
+    font-size:clamp(34px,9vw,44px);
+    font-variant-numeric:tabular-nums;
+    letter-spacing:1px;
+    color:var(--ink);
+  }
+
+  .choices{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    width:100%;
+  }
+  .choice-btn{
+    appearance:none;
+    cursor:pointer;
+    border:1.5px solid var(--line);
+    background:var(--surface-soft);
+    color:var(--ink);
+    font-family:"JetBrains Mono",monospace;
+    font-size:20px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    padding:14px 6px;
+    border-radius:12px;
+    transition:transform .1s ease, border-color .15s ease, background-color .15s ease;
+  }
+  .choice-btn:active{ transform:scale(.96); }
+  .choice-btn.correct{
+    border-color:var(--green);
+    background:color-mix(in srgb, var(--green) 18%, var(--surface));
+    color:var(--green);
+  }
+  .choice-btn.wrong{
+    border-color:var(--bad);
+    background:color-mix(in srgb, var(--bad) 16%, var(--surface));
+    color:var(--bad);
+  }
+  .choice-btn:disabled{ cursor:default; }
+  .choice-btn:disabled:not(.correct):not(.wrong){ opacity:.55; }
+
+  .primary-btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    background:var(--blue);
+    color:var(--blue-ink);
+    font-family:"Do Hyeon","Malgun Gothic",sans-serif;
+    font-size:17px;
+    padding:12px 22px;
+    border-radius:12px;
+    transition:transform .1s ease, opacity .15s ease;
+  }
+  .primary-btn:active{ transform:scale(.96); }
+  .primary-btn:disabled{ opacity:.5; cursor:default; }
+  .primary-btn.hidden{ display:none; }
+
+  .feedback{
+    min-height:22px;
+    font-size:14.5px;
+    text-align:center;
+    color:var(--ink-soft);
+  }
+  .feedback.correct{ color:var(--green); }
+  .feedback.wrong{ color:var(--bad); }
+
+  @keyframes shake{
+    10%,90%{ transform:translateX(-2px); }
+    20%,80%{ transform:translateX(3px); }
+    30%,50%,70%{ transform:translateX(-5px); }
+    40%,60%{ transform:translateX(5px); }
+  }
+  .problem-panel.shake{ animation:shake .4s ease; }
+  @media (prefers-reduced-motion: reduce){
+    .problem-panel.shake{ animation:none; }
+    .level-btn, .primary-btn{ transition:none; }
+  }
+
+  /* result panel */
+  .result-panel{
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:16px;
+    padding:34px 20px 28px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    text-align:center;
+  }
+  .result-panel.hidden{ display:none; }
+  .result-score{
+    font-family:"Do Hyeon","Malgun Gothic",sans-serif;
+    font-size:46px;
+    color:var(--blue);
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.5px;
+  }
+  .result-label{
+    font-size:15.5px;
+    color:var(--ink);
+  }
+  .result-detail{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+
+  /* stats bar */
+  .stats-bar{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+  }
+  .stat{
+    background:var(--surface-soft);
+    border-radius:12px;
+    padding:10px 8px;
+    text-align:center;
+  }
+  .stat .n{
+    font-family:"JetBrains Mono",monospace;
+    font-weight:700;
+    font-size:20px;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat .t{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+</style>
+
+<div class="page">
+  <header>
+    <h1>숫자블록 연산</h1>
+    <p>자릿수를 고르고, 덧셈과 뺄셈을 연습해요</p>
+  </header>
+
+  <div class="card">
+    <div class="op-toggle" role="tablist" aria-label="연산 선택">
+      <button type="button" data-op="add" class="active" role="tab" aria-selected="true">덧셈 +</button>
+      <button type="button" data-op="sub" role="tab" aria-selected="false">뺄셈 −</button>
+    </div>
+
+    <p class="level-hint">자릿수는 여러 개 함께 고를 수 있어요</p>
+    <div class="level-row" role="group" aria-label="자릿수 선택 (중복 선택 가능)">
+      <button type="button" class="level-btn active" data-level="1" aria-pressed="true">
+        <span class="check">✓</span>
+        <span class="icon-slot"><span class="block-unit"></span></span>
+        <span class="label">한자리<small>1~9</small></span>
+      </button>
+      <button type="button" class="level-btn" data-level="2" aria-pressed="false">
+        <span class="check">✓</span>
+        <span class="icon-slot"><span class="block-ten" id="tenIcon"></span></span>
+        <span class="label">두자리<small>10~99</small></span>
+      </button>
+      <button type="button" class="level-btn" data-level="3" aria-pressed="false">
+        <span class="check">✓</span>
+        <span class="icon-slot"><span class="block-hundred" id="hundredIcon"></span></span>
+        <span class="label">세자리<small>100~999</small></span>
+      </button>
+    </div>
+
+    <div class="count-toggle" role="tablist" aria-label="문제 수 선택">
+      <button type="button" data-count="5" role="tab" aria-selected="false">5문제</button>
+      <button type="button" data-count="10" class="active" role="tab" aria-selected="true">10문제</button>
+      <button type="button" data-count="20" role="tab" aria-selected="false">20문제</button>
+      <button type="button" data-count="30" role="tab" aria-selected="false">30문제</button>
+    </div>
+
+    <div class="problem-panel" id="problemPanel">
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span class="progress-text" id="progressText">문제 1 / 10</span>
+          <span class="timer-text" id="timerText">0:00</span>
+        </div>
+        <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <div class="equation" id="equation" aria-live="off">? + ? =</div>
+      <div class="choices" id="choices" role="group" aria-label="답 선택"></div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <button class="primary-btn hidden" id="actionBtn" type="button">다음 문제</button>
+    </div>
+
+    <div class="result-panel hidden" id="resultPanel">
+      <div class="result-score" id="resultScore">0 / 0</div>
+      <div class="result-label" id="resultLabel">정답률 0%</div>
+      <div class="result-detail" id="resultDetail">최고 기록(연속 정답) 0개</div>
+      <button class="primary-btn" id="restartBtn" type="button">다시 풀기</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><div class="n" id="statScore">0/0</div><div class="t">맞은 개수</div></div>
+      <div class="stat"><div class="n" id="statStreak">0</div><div class="t">연속 정답</div></div>
+      <div class="stat"><div class="n" id="statBest">0</div><div class="t">최고 기록</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var tenIcon = document.getElementById('tenIcon');
+  for (var i=0;i<10;i++){ tenIcon.appendChild(document.createElement('span')); }
+  var hundredIcon = document.getElementById('hundredIcon');
+  for (var j=0;j<100;j++){ hundredIcon.appendChild(document.createElement('span')); }
+
+  var state = { op:'add', levels:[1], total:10, current:null, answered:false, correct:0, attempted:0, streak:0, startTime:null, timerHandle:null };
+
+  var equationEl = document.getElementById('equation');
+  var choicesEl = document.getElementById('choices');
+  var actionBtn = document.getElementById('actionBtn');
+  var feedbackEl = document.getElementById('feedback');
+  var panelEl = document.getElementById('problemPanel');
+  var progressText = document.getElementById('progressText');
+  var progressFill = document.getElementById('progressFill');
+  var timerText = document.getElementById('timerText');
+  var resultPanel = document.getElementById('resultPanel');
+  var resultScoreEl = document.getElementById('resultScore');
+  var resultLabelEl = document.getElementById('resultLabel');
+  var resultDetailEl = document.getElementById('resultDetail');
+  var restartBtn = document.getElementById('restartBtn');
+  var statScore = document.getElementById('statScore');
+  var statStreak = document.getElementById('statStreak');
+  var statBest = document.getElementById('statBest');
+
+  var praises = ['정확해요!','잘했어요!','완벽해요!','최고예요!','바로 그거예요!'];
+
+  function levelsKey(){ return state.levels.slice().sort().join(''); }
+  function bestKey(){ return 'nb_best_' + state.op + '_' + levelsKey(); }
+  function loadBest(){
+    try{
+      var v = localStorage.getItem(bestKey());
+      return v ? parseInt(v,10) : 0;
+    }catch(e){ return 0; }
+  }
+  function saveBest(v){
+    try{ localStorage.setItem(bestKey(), String(v)); }catch(e){}
+  }
+
+  function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  function formatElapsed(ms){
+    var totalSec = Math.floor(ms / 1000);
+    var m = Math.floor(totalSec / 60);
+    var s = totalSec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function startTimer(){
+    stopTimer();
+    state.startTime = Date.now();
+    timerText.textContent = '0:00';
+    state.timerHandle = setInterval(function(){
+      timerText.textContent = formatElapsed(Date.now() - state.startTime);
+    }, 250);
+  }
+  function stopTimer(){
+    if (state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; }
+  }
+
+  function buildChoices(answer, level){
+    var spread = level === 1 ? 9 : (level === 2 ? 20 : 60);
+    var values = [answer];
+    var guard = 0;
+    while (values.length < 4 && guard < 100){
+      guard++;
+      var offset = rand(1, spread) * (Math.random() < 0.5 ? -1 : 1);
+      var candidate = answer + offset;
+      if (candidate < 0) continue;
+      if (values.indexOf(candidate) !== -1) continue;
+      values.push(candidate);
+    }
+    for (var shift = 1; values.length < 4; shift++){
+      var c = answer + shift;
+      if (values.indexOf(c) === -1) values.push(c);
+    }
+    for (var k = values.length - 1; k > 0; k--){
+      var idx = Math.floor(Math.random() * (k + 1));
+      var tmp = values[k]; values[k] = values[idx]; values[idx] = tmp;
+    }
+    return values;
+  }
+
+  function newProblem(){
+    var ranges = {1:[1,9], 2:[10,99], 3:[100,999]};
+    var level = state.levels[rand(0, state.levels.length - 1)];
+    var r = ranges[level];
+    var a = rand(r[0], r[1]);
+    var b = rand(r[0], r[1]);
+    if (state.op === 'sub' && a < b){ var t=a; a=b; b=t; }
+    var answer = state.op === 'add' ? a+b : a-b;
+    state.current = { a:a, b:b, answer:answer, level:level };
+    state.answered = false;
+    equationEl.textContent = a + ' ' + (state.op==='add' ? '+' : '−') + ' ' + b + ' =';
+
+    var options = buildChoices(answer, level);
+    choicesEl.innerHTML = '';
+    options.forEach(function(val){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-btn';
+      btn.textContent = val;
+      btn.setAttribute('data-value', val);
+      btn.addEventListener('click', function(){ handleChoice(this); });
+      choicesEl.appendChild(btn);
+    });
+
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+    panelEl.className = 'problem-panel';
+    actionBtn.classList.add('hidden');
+
+    progressText.textContent = '문제 ' + (state.attempted + 1) + ' / ' + state.total;
+    progressFill.style.width = ((state.attempted / state.total) * 100) + '%';
+  }
+
+  function finishSession(){
+    stopTimer();
+    var elapsed = state.startTime ? Date.now() - state.startTime : 0;
+    panelEl.classList.add('hidden');
+    resultPanel.classList.remove('hidden');
+    var pct = state.total ? Math.round((state.correct / state.total) * 100) : 0;
+    resultScoreEl.textContent = state.correct + ' / ' + state.total;
+    resultLabelEl.textContent = '정답률 ' + pct + '%';
+    resultDetailEl.textContent = '소요 시간 ' + formatElapsed(elapsed) + ' · 최고 기록(연속 정답) ' + loadBest() + '개';
+    restartBtn.focus();
+  }
+
+  function startSession(){
+    state.correct = 0; state.attempted = 0; state.streak = 0;
+    resultPanel.classList.add('hidden');
+    panelEl.classList.remove('hidden');
+    renderStats();
+    startTimer();
+    newProblem();
+  }
+
+  function proceed(){
+    if (state.attempted >= state.total){ finishSession(); }
+    else { newProblem(); }
+  }
+
+  function renderStats(){
+    statScore.textContent = state.correct + '/' + state.attempted;
+    statStreak.textContent = state.streak;
+    statBest.textContent = loadBest();
+  }
+
+  function handleChoice(btn){
+    if (state.answered) return;
+    state.answered = true;
+    state.attempted++;
+
+    var val = parseInt(btn.getAttribute('data-value'), 10);
+    var buttons = choicesEl.querySelectorAll('.choice-btn');
+    buttons.forEach(function(b){ b.disabled = true; });
+
+    if (val === state.current.answer){
+      state.correct++;
+      state.streak++;
+      var best = loadBest();
+      if (state.streak > best){ saveBest(state.streak); }
+      btn.classList.add('correct');
+      feedbackEl.textContent = praises[rand(0, praises.length-1)];
+      feedbackEl.className = 'feedback correct';
+      panelEl.className = 'problem-panel state-correct';
+    } else {
+      state.streak = 0;
+      btn.classList.add('wrong');
+      buttons.forEach(function(b){
+        if (parseInt(b.getAttribute('data-value'),10) === state.current.answer){ b.classList.add('correct'); }
+      });
+      feedbackEl.textContent = '아쉬워요, 정답은 ' + state.current.answer + '예요';
+      feedbackEl.className = 'feedback wrong';
+      panelEl.className = 'problem-panel state-wrong shake';
+    }
+    renderStats();
+    progressFill.style.width = ((state.attempted / state.total) * 100) + '%';
+    actionBtn.textContent = state.attempted >= state.total ? '결과 보기' : '다음 문제';
+    actionBtn.classList.remove('hidden');
+    actionBtn.focus();
+  }
+
+  actionBtn.addEventListener('click', proceed);
+  restartBtn.addEventListener('click', startSession);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && state.answered){ e.preventDefault(); proceed(); return; }
+    if (!state.answered && /^[1-4]$/.test(e.key)){
+      var idx = parseInt(e.key,10) - 1;
+      var buttons = choicesEl.querySelectorAll('.choice-btn');
+      if (buttons[idx]) buttons[idx].click();
+    }
+  });
+
+  var countButtons = document.querySelectorAll('.count-toggle button');
+  countButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      countButtons.forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected','true');
+      state.total = parseInt(btn.getAttribute('data-count'),10);
+      startSession();
+    });
+  });
+
+  var opButtons = document.querySelectorAll('.op-toggle button');
+  opButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      opButtons.forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected','true');
+      state.op = btn.getAttribute('data-op');
+      startSession();
+    });
+  });
+
+  var levelButtons = document.querySelectorAll('.level-btn');
+  levelButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var lvl = parseInt(btn.getAttribute('data-level'), 10);
+      var isActive = btn.classList.contains('active');
+      if (isActive){
+        if (state.levels.length === 1) return;
+        state.levels = state.levels.filter(function(l){ return l !== lvl; });
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed','false');
+      } else {
+        state.levels.push(lvl);
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed','true');
+      }
+      startSession();
+    });
+  });
+
+  startSession();
+})();
+</script>
